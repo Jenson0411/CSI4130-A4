@@ -6,8 +6,6 @@ const scene = new THREE.Scene();
 
 // Create a camera
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 0, 12);
-camera.lookAt(0, 0, 0);
 
 
 // Create a renderer
@@ -17,7 +15,7 @@ document.body.appendChild(renderer.domElement);
 renderer.setClearColor(0xADD8E6);
 
 // Create a top of the snowglobe
-const radius = 4;
+const radius = 6;
 const theta = -Math.PI / 4;
 const textureLoader = new THREE.TextureLoader();
 const snowTexture = textureLoader.load("textures/snowwall.jpg")
@@ -26,6 +24,7 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
     roughness : 0,
     metalness: 0,
     transmission: 1,
+    transparent: 1
 });
 
 const top = new THREE.Mesh(topGeometry, glassMaterial);
@@ -33,16 +32,18 @@ scene.add(top);
 
 // Calculation for spherical cap radius(basic trigonometry)
 const baseRadius = radius * Math.sin(Math.abs(theta));
-
+const capHeight = radius - radius * Math.cos(Math.abs(theta));
+camera.position.set(0, 0, 12); // Adjust the position to move the camera closer to the scene
+camera.lookAt(0, 0, 0); // Look at the center of the scene where your snowglobe is positioned
 
 // Create base of snowglobe
 const woodTexture = textureLoader.load("textures/OIP.jpg")
-
-const baseGeometry = new THREE.CylinderGeometry(baseRadius, baseRadius*1.5, 2);
+const baseHeight = 0.5;
+const baseGeometry = new THREE.CylinderGeometry(baseRadius, baseRadius, baseHeight);
 const baseMaterial = new THREE.MeshBasicMaterial({ map : woodTexture});
 const base = new THREE.Mesh(baseGeometry, baseMaterial);
 scene.add(base);
-base.position.set(0, -radius, 0);
+base.position.set(0, -(radius-capHeight+baseHeight/2), 0);
 
 // Ambient lights
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
