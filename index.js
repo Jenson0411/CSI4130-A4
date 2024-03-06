@@ -1,11 +1,26 @@
 import * as THREE from 'three';
 import { GUI } from 'dat.gui';
 
+var t = 100;
+var animationFrames = 100;
+var speed = 1;
+var shakingDirection = "U";
+
 // Create a scene
 const scene = new THREE.Scene();
 
 // Create a camera
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+const shakingVariables = {
+    speed : 1,
+    animationFrames : 100
+
+};
+
+function shakeAnimation(){
+    t = 0;
+}
 
 
 // Create a renderer
@@ -18,7 +33,6 @@ renderer.setClearColor(0xADD8E6);
 const radius = 6;
 const theta = -Math.PI / 4;
 const textureLoader = new THREE.TextureLoader();
-const snowTexture = textureLoader.load("textures/snowwall.jpg");
 const topGeometry = new THREE.SphereGeometry(radius, 64, 64, 0, Math.PI * 2, theta, Math.PI);
 const glassMaterial = new THREE.MeshPhysicalMaterial({
     roughness : 0,
@@ -26,15 +40,17 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
     transmission: 1,
     transparent: 1
 });
-
 const top = new THREE.Mesh(topGeometry, glassMaterial);
 scene.add(top);
+
+// Setting up camera
+camera.position.set(0, 0, 12); 
+camera.lookAt(top.position.x, top.position.y, top.position.z); 
+
 
 // Calculation for spherical cap radius(basic trigonometry)
 const baseRadius = radius * Math.sin(Math.abs(theta));
 const capHeight = radius - radius * Math.cos(Math.abs(theta));
-camera.position.set(0, 0, 12); 
-camera.lookAt(0, 0, 0); 
 
 // Create base of snowglobe
 const woodTexture = textureLoader.load("textures/OIP.jpg");
@@ -45,6 +61,7 @@ const base = new THREE.Mesh(baseGeometry, baseMaterial);
 scene.add(base);
 base.position.set(0, -(radius-capHeight+baseHeight/2), 0);
 
+
 // Ambient lights
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
 scene.add(ambientLight);
@@ -53,12 +70,6 @@ scene.add(ambientLight);
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
 directionalLight.position.set(5, 5, 5);
 scene.add(directionalLight);
-
-const shakingVariables = {
-    speed : 1,
-    animationFrames : 100
-
-};
 
 //Dat Slider
 const gui = new GUI();
@@ -73,34 +84,21 @@ shakeAnimationFolder.add(shakingVariables, 'speed', 0, 3, 0.1).name("Speed");
 shakeAnimationFolder.add(shakingVariables, 'animationFrames', 0, 500, 1).name("Animation Frame");
 shakeAnimationFolder.open();
 
-
 gui.add({'Shake Animation': shakeAnimation}, 'Shake Animation').name("Shake Animation");
 
-
-
-function shakeAnimation(){
-    t = 0;
-}
-
-
-var t = 100;
-var animationFrames = 100;
-var speed = 1;
-
-var shakingDirection = "U";
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
     if(t<shakingVariables.animationFrames){
         if(shakingDirection=="D"){
-            top.position.y = top.position.y - 0.5 *shakingVariables.speed;
-            base.position.y = base.position.y -0.5 * shakingVariables.speed;
+            top.position.y = top.position.y - 0.25 *shakingVariables.speed;
+            base.position.y = base.position.y -0.25 * shakingVariables.speed;
             
         }
         else if(shakingDirection =="U"){
-            top.position.y = top.position.y + 0.5 *shakingVariables.speed;
-            base.position.y = base.position.y + 0.5*shakingVariables.speed;
+            top.position.y = top.position.y + 0.25 *shakingVariables.speed;
+            base.position.y = base.position.y + 0.25*shakingVariables.speed;
 
         }
 
