@@ -18,7 +18,7 @@ renderer.setClearColor(0xADD8E6);
 const radius = 6;
 const theta = -Math.PI / 4;
 const textureLoader = new THREE.TextureLoader();
-const snowTexture = textureLoader.load("textures/snowwall.jpg")
+const snowTexture = textureLoader.load("textures/snowwall.jpg");
 const topGeometry = new THREE.SphereGeometry(radius, 64, 64, 0, Math.PI * 2, theta, Math.PI);
 const glassMaterial = new THREE.MeshPhysicalMaterial({
     roughness : 0,
@@ -33,11 +33,11 @@ scene.add(top);
 // Calculation for spherical cap radius(basic trigonometry)
 const baseRadius = radius * Math.sin(Math.abs(theta));
 const capHeight = radius - radius * Math.cos(Math.abs(theta));
-camera.position.set(0, 0, 12); // Adjust the position to move the camera closer to the scene
-camera.lookAt(0, 0, 0); // Look at the center of the scene where your snowglobe is positioned
+camera.position.set(0, 0, 12); 
+camera.lookAt(0, 0, 0); 
 
 // Create base of snowglobe
-const woodTexture = textureLoader.load("textures/OIP.jpg")
+const woodTexture = textureLoader.load("textures/OIP.jpg");
 const baseHeight = 0.5;
 const baseGeometry = new THREE.CylinderGeometry(baseRadius, baseRadius, baseHeight);
 const baseMaterial = new THREE.MeshBasicMaterial({ map : woodTexture});
@@ -58,15 +58,21 @@ const shakingVariables = {
     speed : 1,
     animationFrames : 100
 
-}
+};
 
 //Dat Slider
 const gui = new GUI();
-gui.addFolder("Shaking Controls");
+var cameraFolder = gui.addFolder('Camera Setting');
+cameraFolder.add(camera.position, 'x', -200, 200, 1).name("X");
+cameraFolder.add(camera.position, 'y', -200, 200, 1).name("Y");
+cameraFolder.add(camera.position, 'z', -200, 200, 1).name("Z");
+cameraFolder.open();
+
 var shakeAnimationFolder = gui.addFolder('Shaking Setting');
 shakeAnimationFolder.add(shakingVariables, 'speed', 0, 3, 0.1).name("Speed");
 shakeAnimationFolder.add(shakingVariables, 'animationFrames', 0, 500, 1).name("Animation Frame");
 shakeAnimationFolder.open();
+
 
 gui.add({'Shake Animation': shakeAnimation}, 'Shake Animation').name("Shake Animation");
 
@@ -78,7 +84,7 @@ function shakeAnimation(){
 
 
 var t = 100;
-var animationFrames = 100
+var animationFrames = 100;
 var speed = 1;
 
 var shakingDirection = "U";
