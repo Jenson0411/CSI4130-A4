@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GUI } from 'dat.gui';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 
 var t = 100;
 var animationFrames = 100;
@@ -15,13 +16,11 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const shakingVariables = {
     speed : 1,
     animationFrames : 100
-
 };
 
 function shakeAnimation(){
     t = 0;
 }
-
 
 // Create a renderer
 const renderer = new THREE.WebGLRenderer();
@@ -45,8 +44,6 @@ scene.add(top);
 
 // Setting up camera
 camera.position.set(0, 0, 12); 
-camera.lookAt(top.position.x, top.position.y, top.position.z); 
-
 
 // Calculation for spherical cap radius(basic trigonometry)
 const baseRadius = radius * Math.sin(Math.abs(theta));
@@ -59,7 +56,18 @@ const baseGeometry = new THREE.CylinderGeometry(baseRadius, baseRadius, baseHeig
 const baseMaterial = new THREE.MeshBasicMaterial({ map : woodTexture});
 const base = new THREE.Mesh(baseGeometry, baseMaterial);
 scene.add(base);
-base.position.set(0, -(radius-capHeight+baseHeight/2), 0);
+base.position.set(0, -((radius-capHeight)+baseHeight/2), 0);
+
+const shapeGeometry = new THREE.BoxGeometry(1, 1, 1);
+const shape1 = new THREE.Mesh(shapeGeometry, new THREE.MeshBasicMaterial({ color: "red"}))
+const shape2 = new THREE.Mesh(shapeGeometry, new THREE.MeshBasicMaterial({ color: "blue"}))
+const shape3 = new THREE.Mesh(shapeGeometry, new THREE.MeshBasicMaterial({ color: "green"}))
+shape1.position.set(0,0,0);
+shape2.position.set(-1,0,0);
+shape3.position.set(1,0,0);
+scene.add(shape1);
+scene.add(shape2);
+scene.add(shape3);
 
 
 // Ambient lights
@@ -74,15 +82,16 @@ scene.add(directionalLight);
 //Dat Slider
 const gui = new GUI();
 var cameraFolder = gui.addFolder('Camera Setting');
-cameraFolder.add(camera.position, 'x', -200, 200, 1).name("X");
-cameraFolder.add(camera.position, 'y', -200, 200, 1).name("Y");
-cameraFolder.add(camera.position, 'z', -200, 200, 1).name("Z");
+cameraFolder.add(camera.position, 'x', -200, 200, 1).name("X").onChange(camera.lookAt(top.position.x, top.position.y, top.position.z));
+cameraFolder.add(camera.position, 'y', -200, 200, 1).name("Y").onChange(camera.lookAt(top.position.x, top.position.y, top.position.z));
+cameraFolder.add(camera.position, 'z', -200, 200, 1).name("Z").onChange(camera.lookAt(top.position.x, top.position.y, top.position.z));
 cameraFolder.open();
 
 var shakeAnimationFolder = gui.addFolder('Shaking Setting');
 shakeAnimationFolder.add(shakingVariables, 'speed', 0, 3, 0.1).name("Speed");
 shakeAnimationFolder.add(shakingVariables, 'animationFrames', 0, 500, 1).name("Animation Frame");
 shakeAnimationFolder.open();
+
 
 gui.add({'Shake Animation': shakeAnimation}, 'Shake Animation').name("Shake Animation");
 
@@ -102,14 +111,16 @@ function animate() {
 
         }
 
-        if(top.position.y < -0.5 && shakingDirection == "D"){
+        if(top.position.y < -1 && shakingDirection == "D"){
             shakingDirection = "U";
         }
-        else if(top.position.y > 0.5 && shakingDirection == "U"){
+        else if(top.position.y > 1 && shakingDirection == "U"){
             shakingDirection = "D";
         }
         t = t + 1;
     }    
-
+    else{
+        camera.lookAt(top.position.x, top.position.y, top.position.z); 
+    }
 }
 animate();
