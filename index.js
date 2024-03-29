@@ -55,18 +55,6 @@ const base = new THREE.Mesh(baseGeometry, baseMaterial);
 scene.add(base);
 base.position.set(0, -((radius - capHeight) + baseHeight / 2), 0);
 
-const shapeGeometry = new THREE.BoxGeometry(1, 1, 1);
-const shape1 = new THREE.Mesh(shapeGeometry, new THREE.MeshBasicMaterial({ color: "red" }))
-const shape2 = new THREE.Mesh(shapeGeometry, new THREE.MeshBasicMaterial({ color: "blue" }))
-const shape3 = new THREE.Mesh(shapeGeometry, new THREE.MeshBasicMaterial({ color: "green" }))
-shape1.position.set(0, 0, 0);
-shape2.position.set(-1, 0, 0);
-shape3.position.set(1, 0, 0);
-scene.add(shape1);
-scene.add(shape2);
-scene.add(shape3);
-
-
 // Ambient lights
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
 scene.add(ambientLight);
@@ -89,6 +77,7 @@ shakeAnimationFolder.add(shakingVariables, 'speed', 0, 3, 0.1).name("Speed");
 shakeAnimationFolder.add(shakingVariables, 'animationFrames', 0, 500, 1).name("Animation Frame");
 shakeAnimationFolder.open();
 
+var snow
 
 gui.add({ 'Shake Animation': shakeAnimation }, 'Shake Animation').name("Shake Animation");
 
@@ -96,40 +85,51 @@ gui.add({ 'Shake Animation': shakeAnimation }, 'Shake Animation').name("Shake An
 const snowflakeTexture = textureLoader.load('textures/snowflake.png');
 
 // Create snow particles
-const particleCount = 2000;
+const particleCount = 500;
 const particles = new THREE.BufferGeometry();
 const positions = new Float32Array(particleCount * 3); // 3 values per vertex (x, y, z)
 const velocities = new Float32Array(particleCount * 3); // 3 values per velocity (vx, vy, vz)
-const gravity = new THREE.Vector3(0, -0.02, 0); // Adjust gravity as needed
+const deaths = new Float32Array(particleCount)
+const gravity = new THREE.Vector3(0, -0.01, 0); // Adjust gravity as needed
 
-for (let i = 0; i < particleCount; i++) {
-    const y = Math.random() * (radius+(radius-capHeight))  - (radius-capHeight);
-    const x = Math.random() * Math.sqrt(radius*radius-y*y)*1.5 -Math.sqrt(radius*radius-y*y)*1.5/2
-    const z = Math.random() * Math.sqrt(radius*radius-y*y)*1.5- Math.sqrt(radius*radius-y*y)*1.5/2
-    const vx = Math.random() * 0.01 - 0.005 // Random velocity in x direction
-    const vy = Math.random() * 0.01 - 0.005; // Random velocity in y direction
-    const vz = Math.random() * 0.01 -0.005; // Random velocity in z direction
+function particleSystemInit(){
+    for (let i = 0; i < particleCount; i++) {
+        const y = Math.random() * (radius+(radius-capHeight))  - (radius-capHeight);
+        const x = Math.random() * Math.sqrt(radius*radius-y*y)*1.5 -Math.sqrt(radius*radius-y*y)*1.5/2
+        const z = Math.random() * Math.sqrt(radius*radius-y*y)*1.5- Math.sqrt(radius*radius-y*y)*1.5/2
+        const vx = Math.random() * 0.04 - 0.02 // Random velocity in x direction
+        const vy = Math.random() * 0.04 - 0.02; // Random velocity in y direction
+        const vz = Math.random() * 0.04 -0.02; // Random velocity in z direction
 
-    // Set particle position
-    positions[i * 3] = x;
-    positions[i * 3 + 1] = y;
-    positions[i * 3 + 2] = z;
+        // Set particle position
+        positions[i * 3] = x;
+        positions[i * 3 + 1] = y;
+        positions[i * 3 + 2] = z;
 
-    // Set particle velocity
-    velocities[i * 3] = vx;
-    velocities[i * 3 + 1] = vy;
-    velocities[i * 3 + 2] = vz;
+        // Set particle velocity
+        velocities[i * 3] = vx;
+        velocities[i * 3 + 1] = vy;
+        velocities[i * 3 + 2] = vz;
+        
+        //set particile's death counter
+        deaths[i] = 0;
+    }
+
+    particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    particles.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+    particles.setAttribute('death', new THREE.BufferAttribute(deaths, 3));
+
+    particleSystem.geometry.attributes.position.needsUpdate = true; 
+    particleSystem.geometry.attributes.velocity.needsUpdate = true; 
+    particleSystem.geometry.attributes.death.needsUpdate = true;
 }
-
-particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-particles.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
 
 const particleMaterial = new THREE.PointsMaterial({
     size: 0.1,
     map: snowflakeTexture,
-    blending: THREE.AdditiveBlending,
     transparent: true,
-    depthTest: false
+    depthTest: false,
+    blending: THREE.AdditiveBlending,
 });
 
 const particleSystem = new THREE.Points(particles, particleMaterial);
@@ -141,6 +141,8 @@ let snowfallStarted = false;
 let snowfallTimer = 0;
 // Duration of snowfall animation in seconds
 const snowfallDuration = 10;
+var deathCounter = 0
+particleSystemInit();
 
 // Function to start the shaking animation
 function shakeAnimation() {
@@ -151,7 +153,7 @@ function shakeAnimation() {
     snowfallStarted = false;
     snowfallTimer = 0;
 }
-
+var flag = true;
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
@@ -182,67 +184,94 @@ function animate() {
         }
     } else if (snowfallStarted) {
         // Snowfall animation
-        if (snowfallTimer < snowfallDuration * 60) { // Convert duration to frames
+        if(flag){
+            particleSystemInit();
+
+        }
+        if (deathCounter<=particleCount) { // Convert duration to frames
             // Get particle attributes
             const positions = particles.getAttribute('position');
             const velocities = particles.getAttribute('velocity');
+            const deaths = particles.getAttribute('death');
 
             // Update particle positions
             for (let i = 0; i < particleCount; i++) {
-                // Update position based on velocity
-                positions.array[i * 3] += velocities.array[i * 3];
-                positions.array[i * 3 + 1] += velocities.array[i * 3 + 1];
-                positions.array[i * 3 + 2] += velocities.array[i * 3 + 2];
+                if(deaths.array[i] <= 20){
+                    // Update position based on velocity
+                    positions.array[i * 3] += velocities.array[i * 3];
+                    positions.array[i * 3 + 1] += velocities.array[i * 3 + 1];
+                    positions.array[i * 3 + 2] += velocities.array[i * 3 + 2];
 
-                // Apply gravity
-                velocities.array[i * 3] += gravity.x;
-                velocities.array[i * 3 + 1] += gravity.y;
-                velocities.array[i * 3 + 2] += gravity.z;
+                    // Apply gravity
+                    velocities.array[i * 3] += gravity.x;
+                    velocities.array[i * 3 + 1] += gravity.y;
+                    velocities.array[i * 3 + 2] += gravity.z;
 
-                // Reset particle position if it goes below the ground
-                if (positions.array[i * 3 + 1] < -((radius - capHeight) + baseHeight / 2)) {
-                    positions.array[i * 3 + 1] = Math.random() * (radius+(radius-capHeight))  - (radius-capHeight);
-                    positions.array[i * 3] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 
-                    positions.array[i * 3 + 2] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 - Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2
+                    // Reset particle position if it goes below the ground
+                    if (positions.array[i * 3 + 1] < -((radius - capHeight) + baseHeight / 2)) {
+                        deaths.array[i] = deaths.array[i] +1;
+                        positions.array[i * 3 + 1] = Math.random() * (radius+(radius-capHeight))  - (radius-capHeight);
+                        positions.array[i * 3] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 
+                        positions.array[i * 3 + 2] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 - Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2
 
-                    velocities.array[i * 3] = Math.random() * 0.1 - 0.05; // Random velocity in x direction
-                    velocities.array[i * 3 + 1] = Math.random() * 0.1 - 0.05; // Random velocity in y direction
-                    velocities.array[i * 3 + 2] = Math.random() * 0.1 - 0.05; // Random velocity in z direction
-                
+                        velocities.array[i * 3] = Math.random() * 0.04 -0.02; // Random velocity in z direction
+                        velocities.array[i * 3 + 1] = Math.random() * 0.04 -0.02; // Random velocity in z direction
+                        velocities.array[i * 3 + 2] = Math.random() * 0.04 -0.02; // Random velocity in z direction
+
+                    }
+                    else if(positions.array[i*3] > Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2  || positions.array[i*3] < -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 ){
+                        positions.array[i * 3 + 1] = Math.random() * (radius+(radius-capHeight))  - (radius-capHeight);
+                        positions.array[i * 3] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 
+                        positions.array[i * 3 + 2] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 - Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2
+                        velocities.array[i * 3] = Math.random() * 0.04 -0.02; // Random velocity in z direction
+                        velocities.array[i * 3 + 1] = Math.random() * 0.04 -0.02; // Random velocity in z direction
+                        velocities.array[i * 3 + 2] = Math.random() * 0.04 -0.02; // Random velocity in z direction
+
+                        deaths.array[i] = deaths.array[i] +1;
+                        
+                    }
+                    else if(positions.array[i*3+2] > Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2  || positions.array[i*3+2] < -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 ){
+                        positions.array[i * 3 + 1] = Math.random() * (radius+(radius-capHeight))  - (radius-capHeight);
+                        positions.array[i * 3] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 
+                        positions.array[i * 3 + 2] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 - Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2
+
+                        velocities.array[i * 3] = Math.random() * 0.04 -0.02; // Random velocity in z direction
+                        velocities.array[i * 3 + 1] = Math.random() * 0.04 -0.02; // Random velocity in z direction
+                        velocities.array[i * 3 + 2] = Math.random() * 0.04 -0.02; // Random velocity in z direction
+
+                        deaths.array[i] = deaths.array[i] +1;
+                    }
+                    flag = false;
                 }
-                else if(positions.array[i*3] > Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2  || positions.array[i*3] < -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 ){
-                    positions.array[i * 3 + 1] = Math.random() * (radius+(radius-capHeight))  - (radius-capHeight);
-                    positions.array[i * 3] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 
-                    positions.array[i * 3 + 2] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 - Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2
-
-                    velocities.array[i * 3] = Math.random() * 0.1 - 0.05; // Random velocity in x direction
-                    velocities.array[i * 3 + 1] = Math.random() * 0.1 - 0.05; // Random velocity in y direction
-                    velocities.array[i * 3 + 2] = Math.random() * 0.1 - 0.05; // Random velocity in z direction
-                }
-                else if(positions.array[i*3+2] > Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2  || positions.array[i*3+2] < -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 ){
-                    positions.array[i * 3 + 1] = Math.random() * (radius+(radius-capHeight))  - (radius-capHeight);
-                    positions.array[i * 3] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 
-                    positions.array[i * 3 + 2] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 - Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2
-
-                    velocities.array[i * 3] = Math.random() * 0.1 - 0.05; // Random velocity in x direction
-                    velocities.array[i * 3 + 1] = Math.random() * 0.1 - 0.05; // Random velocity in y direction
-                    velocities.array[i * 3 + 2] = Math.random() * 0.1 - 0.05; // Random velocity in z direction
+                else{
+                    deathCounter++;
+                    positions.array[i * 3 ] = 0;
+                    positions.array[i * 3 + 1] = -(radius-capHeight); 
+                    positions.array[i * 3 + 2] = 0
+                    flag = true;
                 }
                 
             }
 
+
+
             // Set updated attributes back to the buffer geometry
             particles.setAttribute('position', positions);
             particles.setAttribute('velocity', velocities);
+            particles.setAttribute('death', deaths);
 
             // Update particle system
-            particleSystem.geometry.attributes.position.needsUpdate = true;
+            particleSystem.geometry.attributes.position.needsUpdate = true; 
+            particleSystem.geometry.attributes.velocity.needsUpdate = true; 
+            particleSystem.geometry.attributes.death.needsUpdate = true;
             snowfallTimer++;
         } else {
             // Snowfall animation ended, reset variables for the next cycle
             snowfallStarted = false;
             snowfallTimer = 0;
-            scene.remove(particleSystem); // Remove snow particles from the scene
+            flag = true;
+            deathCounter = 0;
+            scene.remove(particleSystem);
         }
     }
 }
