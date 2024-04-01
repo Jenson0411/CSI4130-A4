@@ -55,6 +55,32 @@ const base = new THREE.Mesh(baseGeometry, baseMaterial);
 scene.add(base);
 base.position.set(0, -((radius - capHeight) + baseHeight / 2), 0);
 
+const snowGeometry = new THREE.CylinderGeometry(baseRadius, baseRadius, 0.000000000000001);
+const snowMaterial = new THREE.MeshBasicMaterial({color: 'white'})
+const snowLayer =  new THREE.Mesh(snowGeometry, snowMaterial)
+snowLayer.position.set(0, -((radius - capHeight +0.000000000000001/2)), 0);
+scene.add(snowLayer);
+
+const treeBaseGeometry = new THREE.CylinderGeometry(1, 1, 3);
+const treeBaseMaterial = new THREE.MeshBasicMaterial({color: 'brown'})
+const treeBase =  new THREE.Mesh(treeBaseGeometry, treeBaseMaterial);
+treeBase.position.set(0, -((radius - capHeight)) + 3/2, 0);
+scene.add(treeBase);
+
+
+const treeHeight = 3
+const treeCones = new THREE.ConeGeometry(2, 3);
+const treeConeMaterial = new THREE.MeshBasicMaterial({color: 'green'})
+const treeCone1 =  new THREE.Mesh(treeCones, treeConeMaterial);
+treeCone1.position.set(0, treeBase.position.y+ 3/2 , 0);
+const treeCone2 =  new THREE.Mesh(treeCones, treeConeMaterial);
+treeCone2.position.set(0, treeCone1.position.y+ 3/2 , 0);
+const treeCone3 =  new THREE.Mesh(treeCones, treeConeMaterial);
+treeCone3.position.set(0, treeCone2.position.y+ 3/2 , 0);
+scene.add(treeCone1);
+scene.add(treeCone2);
+scene.add(treeCone3);
+
 // Ambient lights
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
 scene.add(ambientLight);
@@ -90,21 +116,25 @@ const particles = new THREE.BufferGeometry();
 const positions = new Float32Array(particleCount * 3); // 3 values per vertex (x, y, z)
 const velocities = new Float32Array(particleCount * 3); // 3 values per velocity (vx, vy, vz)
 const deaths = new Float32Array(particleCount)
-const gravity = new THREE.Vector3(0, -0.01, 0); // Adjust gravity as needed
+const state = new Float32Array(particleCount)
+const gravity = new THREE.Vector3(0, -0.005, 0); // Adjust gravity as needed
 
 function particleSystemInit(){
+
     for (let i = 0; i < particleCount; i++) {
-        const y = Math.random() * (radius+(radius-capHeight))  - (radius-capHeight);
-        const x = Math.random() * Math.sqrt(radius*radius-y*y)*1.5 -Math.sqrt(radius*radius-y*y)*1.5/2
-        const z = Math.random() * Math.sqrt(radius*radius-y*y)*1.5- Math.sqrt(radius*radius-y*y)*1.5/2
-        const vx = Math.random() * 0.04 - 0.02 // Random velocity in x direction
-        const vy = Math.random() * 0.04 - 0.02; // Random velocity in y direction
-        const vz = Math.random() * 0.04 -0.02; // Random velocity in z direction
+        let coord = generateRandomPointInsideSphere();
+
+        const y = coord[1]
+        const x = coord[0]
+        const z = coord[2]
+        const vx = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+        const vy = Math.random() * 0.02 - 0.01; // Random velocity in y direction
+        const vz = Math.random() * 0.02 -0.01; // Random velocity in z direction
 
         // Set particle position
-        positions[i * 3] = x;
-        positions[i * 3 + 1] = y;
-        positions[i * 3 + 2] = z;
+        positions[i * 3] = 0;
+        positions[i * 3 + 1] =  radius + 2;
+        positions[i * 3 + 2] = 0;
 
         // Set particle velocity
         velocities[i * 3] = vx;
@@ -113,11 +143,13 @@ function particleSystemInit(){
         
         //set particile's death counter
         deaths[i] = 0;
+        state[i] = 0;
     }
 
     particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     particles.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
-    particles.setAttribute('death', new THREE.BufferAttribute(deaths, 3));
+    particles.setAttribute('death', new THREE.BufferAttribute(deaths, 1));
+    particles.setAttribute('state', new THREE.BufferAttribute(state, 1));
 
     particleSystem.geometry.attributes.position.needsUpdate = true; 
     particleSystem.geometry.attributes.velocity.needsUpdate = true; 
@@ -134,6 +166,9 @@ const particleMaterial = new THREE.PointsMaterial({
 
 const particleSystem = new THREE.Points(particles, particleMaterial);
 
+
+
+
 // Animation loop
 // Flag to indicate whether the snowfall animation has started
 let snowfallStarted = false;
@@ -143,7 +178,8 @@ let snowfallTimer = 0;
 const snowfallDuration = 10;
 var deathCounter = 0
 particleSystemInit();
-
+var count =0;
+var flag = false;
 // Function to start the shaking animation
 function shakeAnimation() {
     t = 0;
@@ -153,7 +189,7 @@ function shakeAnimation() {
     snowfallStarted = false;
     snowfallTimer = 0;
 }
-var flag = true;
+var flag2 = true;
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
@@ -165,9 +201,20 @@ function animate() {
             if (shakingDirection == "D") {
                 top.position.y -= 0.25 * shakingVariables.speed;
                 base.position.y -= 0.25 * shakingVariables.speed;
+                snowLayer.position.y -= 0.25 * shakingVariables.speed;
+                treeBase.position.y -= 0.25 * shakingVariables.speed;
+                treeCone1.position.y -= 0.25 * shakingVariables.speed;
+                treeCone2.position.y -= 0.25 * shakingVariables.speed;
+                treeCone3.position.y -= 0.25 * shakingVariables.speed;
+
             } else if (shakingDirection == "U") {
                 top.position.y += 0.25 * shakingVariables.speed;
                 base.position.y += 0.25 * shakingVariables.speed;
+                snowLayer.position.y += 0.25 * shakingVariables.speed;
+                treeBase.position.y += 0.25 * shakingVariables.speed;
+                treeCone1.position.y += 0.25 * shakingVariables.speed;
+                treeCone2.position.y += 0.25 * shakingVariables.speed;
+                treeCone3.position.y += 0.25 * shakingVariables.speed;
             }
 
             if (top.position.y < -1 && shakingDirection == "D") {
@@ -181,99 +228,167 @@ function animate() {
             snowfallStarted = true;
             shakeState = false; // Reset shake state
             scene.add(particleSystem); // Add snow particles to the scene
+            flag2= true;
         }
     } else if (snowfallStarted) {
         // Snowfall animation
-        if(flag){
-            particleSystemInit();
-
-        }
-        if (deathCounter<=particleCount) { // Convert duration to frames
-            // Get particle attributes
-            const positions = particles.getAttribute('position');
-            const velocities = particles.getAttribute('velocity');
-            const deaths = particles.getAttribute('death');
-
-            // Update particle positions
-            for (let i = 0; i < particleCount; i++) {
-                if(deaths.array[i] <= 20){
-                    // Update position based on velocity
-                    positions.array[i * 3] += velocities.array[i * 3];
-                    positions.array[i * 3 + 1] += velocities.array[i * 3 + 1];
-                    positions.array[i * 3 + 2] += velocities.array[i * 3 + 2];
-
-                    // Apply gravity
-                    velocities.array[i * 3] += gravity.x;
-                    velocities.array[i * 3 + 1] += gravity.y;
-                    velocities.array[i * 3 + 2] += gravity.z;
-
-                    // Reset particle position if it goes below the ground
-                    if (positions.array[i * 3 + 1] < -((radius - capHeight) + baseHeight / 2)) {
-                        deaths.array[i] = deaths.array[i] +1;
-                        positions.array[i * 3 + 1] = Math.random() * (radius+(radius-capHeight))  - (radius-capHeight);
-                        positions.array[i * 3] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 
-                        positions.array[i * 3 + 2] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 - Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2
-
-                        velocities.array[i * 3] = Math.random() * 0.04 -0.02; // Random velocity in z direction
-                        velocities.array[i * 3 + 1] = Math.random() * 0.04 -0.02; // Random velocity in z direction
-                        velocities.array[i * 3 + 2] = Math.random() * 0.04 -0.02; // Random velocity in z direction
-
-                    }
-                    else if(positions.array[i*3] > Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2  || positions.array[i*3] < -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 ){
-                        positions.array[i * 3 + 1] = Math.random() * (radius+(radius-capHeight))  - (radius-capHeight);
-                        positions.array[i * 3] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 
-                        positions.array[i * 3 + 2] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 - Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2
-                        velocities.array[i * 3] = Math.random() * 0.04 -0.02; // Random velocity in z direction
-                        velocities.array[i * 3 + 1] = Math.random() * 0.04 -0.02; // Random velocity in z direction
-                        velocities.array[i * 3 + 2] = Math.random() * 0.04 -0.02; // Random velocity in z direction
-
-                        deaths.array[i] = deaths.array[i] +1;
-                        
-                    }
-                    else if(positions.array[i*3+2] > Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2  || positions.array[i*3+2] < -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 ){
-                        positions.array[i * 3 + 1] = Math.random() * (radius+(radius-capHeight))  - (radius-capHeight);
-                        positions.array[i * 3] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 -Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2 
-                        positions.array[i * 3 + 2] = Math.random()*Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5 - Math.sqrt(radius*radius-positions.array[i * 3 + 1] *positions.array[i * 3 + 1])*1.5/2
-
-                        velocities.array[i * 3] = Math.random() * 0.04 -0.02; // Random velocity in z direction
-                        velocities.array[i * 3 + 1] = Math.random() * 0.04 -0.02; // Random velocity in z direction
-                        velocities.array[i * 3 + 2] = Math.random() * 0.04 -0.02; // Random velocity in z direction
-
-                        deaths.array[i] = deaths.array[i] +1;
-                    }
-                    flag = false;
+        if (deathCounter<particleCount) { // Convert duration to frames
+            if(flag2){
+                for(var i = count ; i<=particleCount; i+=10){
+                    setInterval(generateSnowparticle, 100*i);
                 }
-                else{
-                    deathCounter++;
-                    positions.array[i * 3 ] = 0;
-                    positions.array[i * 3 + 1] = -(radius-capHeight); 
-                    positions.array[i * 3 + 2] = 0
-                    flag = true;
-                }
-                
-            }
-
-
-
-            // Set updated attributes back to the buffer geometry
-            particles.setAttribute('position', positions);
-            particles.setAttribute('velocity', velocities);
-            particles.setAttribute('death', deaths);
-
-            // Update particle system
-            particleSystem.geometry.attributes.position.needsUpdate = true; 
-            particleSystem.geometry.attributes.velocity.needsUpdate = true; 
-            particleSystem.geometry.attributes.death.needsUpdate = true;
-            snowfallTimer++;
-        } else {
+                flag2 = false;
+            }    
+            snowFalling();
+        }    
+         else {
+            deathCounter = 0;
             // Snowfall animation ended, reset variables for the next cycle
             snowfallStarted = false;
-            snowfallTimer = 0;
-            flag = true;
-            deathCounter = 0;
             scene.remove(particleSystem);
+            particleSystemInit();
         }
     }
+}
+
+
+
+function generateRandomPointInsideSphere() {
+    while(true){
+        const y = Math.random()*(radius*2-capHeight)  -(radius -capHeight)
+        const x = Math.random()*Math.sqrt(radius*radius-y*y)*2 -Math.sqrt(radius*radius - y*y) 
+        const z = Math.random()*Math.sqrt(radius*radius-y*y)*2 -Math.sqrt(radius*radius - y*y)
+        if(Math.sqrt((x- top.position.x)**2 + (y - top.position.y)**2 + (z-top.position.z)**2)<radius){
+            return [x,y,z]
+        }
+        return [x,y,z];
+    }    
+}
+
+function generateSnowparticle(timeout){
+    const positions = particles.getAttribute('position');
+    const velocities = particles.getAttribute('velocity');
+    const deaths = particles.getAttribute('death');
+    const states = particles.getAttribute('state');
+    console.log(timeout);
+    for (let i = count; i < count+10; i++) {
+        if(count<particleCount){
+            let coord = generateRandomPointInsideSphere();
+
+            const y = coord[1]
+            const x = coord[0]
+            const z = coord[2]
+            const vx = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+            const vy = Math.random() * 0.02 - 0.01; // Random velocity in y direction
+            const vz = Math.random() * 0.02 -0.01; // Random velocity in z direction
+
+            // Set particle position
+            positions[i * 3] = x;
+            positions[i * 3 + 1] =  y;
+            positions[i * 3 + 2] = z;
+
+            // Set particle velocity
+            velocities[i * 3] = vx;
+            velocities[i * 3 + 1] = vy;
+            velocities[i * 3 + 2] = vz;
+            
+            //set particile's death counter
+            deaths[i] = 0;
+            state[i] = 1;
+            count++;
+        }    
+    }
+
+    particles.setAttribute('position', positions);
+    particles.setAttribute('velocity', velocities);
+    particles.setAttribute('death', deaths);
+    particles.setAttribute('state', states);
+
+    particleSystem.geometry.attributes.position.needsUpdate = true; 
+    particleSystem.geometry.attributes.velocity.needsUpdate = true; 
+    particleSystem.geometry.attributes.death.needsUpdate = true;
+    particleSystem.geometry.attributes.state.needsUpdate = true;
+
+}
+
+
+function snowFalling(){
+    const positions = particles.getAttribute('position');
+    const velocities = particles.getAttribute('velocity');
+    const deaths = particles.getAttribute('death');
+    const states = particles.getAttribute('state');
+    // Update particle positions
+
+    console.log(states.array);
+    for (let i = 0; i < particleCount; i++) {
+        if(deaths.array[i] <= 20 && states.array[i] == 1){
+            // Update position based on velocity
+            positions.array[i * 3] += velocities.array[i * 3];
+            positions.array[i * 3 + 1] += velocities.array[i * 3 + 1];
+            positions.array[i * 3 + 2] += velocities.array[i * 3 + 2];
+
+            // Apply gravity
+            velocities.array[i * 3] += gravity.x;
+            velocities.array[i * 3 + 1] += gravity.y;
+            velocities.array[i * 3 + 2] += gravity.z;
+
+
+            // Reset particle position if it goes below the ground
+            if (positions.array[i * 3 + 1] < -((radius - capHeight) + baseHeight / 2) && deaths.array[i] != 21) {
+                let coord = generateRandomPointInsideSphere();
+
+                const y = coord[1]
+                const x = coord[0]
+                const z = coord[2]
+
+                deaths.array[i] = deaths.array[i] +1;
+                positions.array[i * 3 + 1] = y
+                positions.array[i * 3] = x
+                positions.array[i * 3 + 2] = z
+
+                velocities.array[i * 3] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+                velocities.array[i * 3 + 1] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+                velocities.array[i * 3 + 2] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+
+
+            }
+            else if(Math.sqrt((positions.array[i*3] - top.position.x)**2 + (positions.array[i*3+1]- top.position.y)**2 + (positions.array[i*3+2] -  top.position.z)**2)>radius && deaths.array[i] != 21){
+                let coord = generateRandomPointInsideSphere();
+
+                const y = coord[1]
+                const x = coord[0]
+                const z = coord[2]
+
+                deaths.array[i] = deaths.array[i] +1;
+                positions.array[i * 3 + 1] = y
+                positions.array[i * 3] = x
+                positions.array[i * 3 + 2] = z
+                
+                velocities.array[i * 3] = Math.random() * 0.02 -0.01; // Random velocity in z direction
+                velocities.array[i * 3 + 1] = Math.random() * 0.02 -0.01; // Random velocity in z direction
+                velocities.array[i * 3 + 2] = Math.random() * 0.02 -0.01; // Random velocity in z directio
+                
+            }
+            flag = false;
+            if(deaths.array[i] == 21){
+                deathCounter++;
+                positions.array[i * 3 ] = 0;
+                positions.array[i * 3 + 1] = -(radius-capHeight)-5; 
+                positions.array[i * 3 + 2] = 0
+            }    
+        }
+    }
+
+    // Set updated attributes back to the buffer geometry
+    particles.setAttribute('position', positions);
+    particles.setAttribute('velocity', velocities);
+    particles.setAttribute('death', deaths);
+
+    // Update particle system
+    particleSystem.geometry.attributes.position.needsUpdate = true; 
+    particleSystem.geometry.attributes.velocity.needsUpdate = true; 
+    particleSystem.geometry.attributes.death.needsUpdate = true;
+
 }
 
 // Start the animation loop
