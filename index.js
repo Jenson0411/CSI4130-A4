@@ -22,6 +22,7 @@ const velocities = new Float32Array(particleCount * 3); // 3 values per velocity
 const deaths = new Float32Array(particleCount);
 const state = new Float32Array(particleCount);
 const gravity = new THREE.Vector3(0, -0.005, 0); // Adjust gravity as needed
+var flag = true;
 
 // Create a scene
 const scene = new THREE.Scene();
@@ -164,6 +165,7 @@ function particleSystemInit(){
     particleSystem.geometry.attributes.position.needsUpdate = true; 
     particleSystem.geometry.attributes.velocity.needsUpdate = true; 
     particleSystem.geometry.attributes.death.needsUpdate = true;
+    flag = true;
 }
 
 const particleMaterial = new THREE.PointsMaterial({
@@ -183,7 +185,7 @@ const particleSystem = new THREE.Points(particles, particleMaterial);
 function shakeAnimation() {
     t = 0;
     shakeState = true;
-
+    particleSystemInit();
     // Reset snowfall animation variables
     snowfallStarted = false;
     snowfallTimer = 0;
@@ -236,6 +238,20 @@ function animate() {
         // Snowfall animation
         if (deathCounter<particleCount) { // Convert duration to frames
             snowFalling();
+            console.log(deathCounter);
+
+            if(deathCounter > 490){
+                const states = particles.getAttribute('state');
+                for(var i = 0; i< particleCount; i++){
+                    
+                        states.array[i] = 1
+                }
+                particles.setAttribute('state', states);
+                particleSystem.geometry.attributes.state.needsUpdate = true; 
+                flag = false;
+
+            }
+
         }    
          else {
             deathCounter = 0;
@@ -270,7 +286,7 @@ function snowFalling(){
     // Update particle positions
 
     for (let i = 0; i < particleCount; i++) {
-        if(Math.random()*1000 <=1){
+        if(Math.random()*500 <=1){
             states.array[i] = 1;
             console.log("here")
         }
@@ -344,15 +360,5 @@ function snowFalling(){
     particleSystem.geometry.attributes.death.needsUpdate = true;
 
 }
-var flag = false;
 // Start the animation loop
 animate();
-
-// function changeState(index){
-//     const states = particles.getAttribute('state');
-//     console.log("hi")
-//     for(var i = index; i< index +10; i++){
-//         index ++;
-//     }
-//     snowFalling();    
-// }
