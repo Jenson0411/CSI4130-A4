@@ -132,7 +132,7 @@ gui.add({ 'Shake Animation': shakeAnimation }, 'Shake Animation').name("Shake An
 // Initialize velocity, position and states of each particle
 function particleSystemInit(){
     for (let i = 0; i < particleCount; i++) {
-        let coord = generateRandomPointInsideSphere();
+        let coord = generateRandomPointInsideSphere1();
 
         const y = coord[1]
         const x = coord[0]
@@ -142,9 +142,9 @@ function particleSystemInit(){
         const vz = Math.random() * 0.02 -0.01; // Random velocity in z direction
 
         // Set particle position
-        positions[i * 3] = x;
-        positions[i * 3 + 1] =  y;
-        positions[i * 3 + 2] = z;
+        positions[i * 3] = 0;
+        positions[i * 3 + 1] =  -(radius-capHeight+0.5);
+        positions[i * 3 + 2] = 0;
 
         // Set particle velocity
         velocities[i * 3] = vx;
@@ -153,7 +153,7 @@ function particleSystemInit(){
         
         //set particile's death counter
         deaths[i] = 0;
-        state[i] = 1;
+        state[i] = 0;
     }
 
     particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -167,7 +167,7 @@ function particleSystemInit(){
 }
 
 const particleMaterial = new THREE.PointsMaterial({
-    size: 0.1,
+    size: 0.15,
     map: snowflakeTexture,
     transparent: true,
     depthTest: false,
@@ -230,6 +230,7 @@ function animate() {
             shakeState = false; // Reset shake state
             scene.add(particleSystem); // Add snow particles to the scene
             particleSystemInit();
+            // changeState(0)
         }
     } else if (snowfallStarted) {
         // Snowfall animation
@@ -247,19 +248,17 @@ function animate() {
     }
 }
 
-
-
-function generateRandomPointInsideSphere() {
+function generateRandomPointInsideSphere1() {
     while(true){
-        const y = Math.random()*(radius*2-capHeight)  -(radius -capHeight)
+        const y = Math.random()*(radius-4) + 4 
         const x = Math.random()*Math.sqrt(radius*radius-y*y)*2 -Math.sqrt(radius*radius - y*y) 
         const z = Math.random()*Math.sqrt(radius*radius-y*y)*2 -Math.sqrt(radius*radius - y*y)
         if(Math.sqrt((x- top.position.x)**2 + (y - top.position.y)**2 + (z-top.position.z)**2)<radius){
             return [x,y,z]
         }
-        return [x,y,z];
     }    
 }
+
 
 
 
@@ -270,9 +269,13 @@ function snowFalling(){
     const states = particles.getAttribute('state');
     // Update particle positions
 
-    console.log(states.array);
     for (let i = 0; i < particleCount; i++) {
-        if(deaths.array[i] <= 20 && states.array[i] == 1){
+        if(Math.random()*1000 <=1){
+            states.array[i] = 1;
+            console.log("here")
+        }
+
+        if(deaths.array[i] <= 5 && states.array[i] == 1){
             // Update position based on velocity
             positions.array[i * 3] += velocities.array[i * 3];
             positions.array[i * 3 + 1] += velocities.array[i * 3 + 1];
@@ -285,8 +288,8 @@ function snowFalling(){
 
 
             // Reset particle position if it goes below the ground
-            if (positions.array[i * 3 + 1] < -((radius - capHeight) + baseHeight / 2) && deaths.array[i] != 21) {
-                let coord = generateRandomPointInsideSphere();
+            if (positions.array[i * 3 + 1] < -((radius - capHeight -0.5)) && deaths.array[i] != 21) {
+                let coord = generateRandomPointInsideSphere1();
 
                 const y = coord[1]
                 const x = coord[0]
@@ -304,26 +307,27 @@ function snowFalling(){
 
             }
             else if(Math.sqrt((positions.array[i*3] - top.position.x)**2 + (positions.array[i*3+1]- top.position.y)**2 + (positions.array[i*3+2] -  top.position.z)**2)>radius && deaths.array[i] != 21){
-                let coord = generateRandomPointInsideSphere();
 
-                const y = coord[1]
-                const x = coord[0]
-                const z = coord[2]
+                if(positions.array[i*3]>0){
+                    velocities.array[i * 3] = -Math.random() * 0.01
+                }
+                else if(positions.array[i*3]<0){
+                    velocities.array[i * 3] = Math.random() * 0.01
+                }
 
-                deaths.array[i] = deaths.array[i] +1;
-                positions.array[i * 3 + 1] = y
-                positions.array[i * 3] = x
-                positions.array[i * 3 + 2] = z
-                
-                velocities.array[i * 3] = Math.random() * 0.02 -0.01; // Random velocity in z direction
-                velocities.array[i * 3 + 1] = Math.random() * 0.02 -0.01; // Random velocity in z direction
-                velocities.array[i * 3 + 2] = Math.random() * 0.02 -0.01; // Random velocity in z directio
+                if(positions.array[i*3+2]>0){
+                    velocities.array[i * 3+2] = -Math.random() * 0.01
+                }
+                else if(positions.array[i*3+2]<0){
+                    velocities.array[i * 3+2] = Math.random() * 0.01
+                }
+
                 
             }
-            if(deaths.array[i] == 21){
+            if(deaths.array[i] == 6){
                 deathCounter++;
                 positions.array[i * 3 ] = 0;
-                positions.array[i * 3 + 1] = -(radius-capHeight)-5; 
+                positions.array[i * 3 + 1] = -(radius-capHeight + 0.5); 
                 positions.array[i * 3 + 2] = 0
             }    
         }
@@ -340,6 +344,15 @@ function snowFalling(){
     particleSystem.geometry.attributes.death.needsUpdate = true;
 
 }
-
+var flag = false;
 // Start the animation loop
 animate();
+
+// function changeState(index){
+//     const states = particles.getAttribute('state');
+//     console.log("hi")
+//     for(var i = index; i< index +10; i++){
+//         index ++;
+//     }
+//     snowFalling();    
+// }
