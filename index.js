@@ -14,15 +14,22 @@ var deathCounter = 0
 var count = 0;
 var flag2 = true;
 
+const snowingVariable = {
+    particleCount : 1000,
+    gravitySpeed: 1 
+}
+
 // Create snow particles
-const particleCount = 1000;
+
 const particles = new THREE.BufferGeometry();
-const positions = new Float32Array(particleCount * 3); // 3 values per vertex (x, y, z)
-const velocities = new Float32Array(particleCount * 3); // 3 values per velocity (vx, vy, vz)
-const deaths = new Float32Array(particleCount);
-const state = new Float32Array(particleCount);
+const positions = new Float32Array(snowingVariable.particleCount * 3); // 3 values per vertex (x, y, z)
+const velocities = new Float32Array(snowingVariable.particleCount * 3); // 3 values per velocity (vx, vy, vz)
+const deaths = new Float32Array(snowingVariable.particleCount);
+const state = new Float32Array(snowingVariable.particleCount);
 const gravity = new THREE.Vector3(0, -0.005, 0); // Adjust gravity as needed
 var flag = true;
+var gravitySpeed = 1;
+
 
 // Create a scene
 const scene = new THREE.Scene();
@@ -85,24 +92,81 @@ scene.add(snowLayer);
 
 //Creating the base of the christmas tree
 const treeBaseGeometry = new THREE.CylinderGeometry(1, 1, 3);
-const treeBaseMaterial = new THREE.MeshBasicMaterial({color: 'brown'})
+const treeBaseMaterial = new THREE.MeshBasicMaterial({color: '#66493A'})
 const treeBase =  new THREE.Mesh(treeBaseGeometry, treeBaseMaterial);
 treeBase.position.set(0, -((radius - capHeight)) + 3/2, 0);
 scene.add(treeBase);
 
 // Creating the top of the christmas tree
 const treeHeight = 3
-const treeCones = new THREE.ConeGeometry(2, 3);
-const treeConeMaterial = new THREE.MeshBasicMaterial({color: 'green'})
-const treeCone1 =  new THREE.Mesh(treeCones, treeConeMaterial);
-treeCone1.position.set(0, treeBase.position.y+ 3/2 , 0);
-const treeCone2 =  new THREE.Mesh(treeCones, treeConeMaterial);
-treeCone2.position.set(0, treeCone1.position.y+ 3/2 , 0);
-const treeCone3 =  new THREE.Mesh(treeCones, treeConeMaterial);
-treeCone3.position.set(0, treeCone2.position.y+ 3/2 , 0);
+const treeCones1 = new THREE.ConeGeometry(2.5, 4, 8);
+const treeCones2 = new THREE.ConeGeometry(2, 3, 8);
+
+const treeConeMaterial = new THREE.MeshStandardMaterial({color: 'green', flatShading:true})
+const treeCone1 =  new THREE.Mesh(treeCones1, treeConeMaterial);
+treeCone1.position.set(0, treeBase.position.y+ 3/2+1 , 0);
+const treeCone2 =  new THREE.Mesh(treeCones2, treeConeMaterial);
+treeCone2.position.set(0, treeCone1.position.y+ 2.5/2 , 0);
+
+const orbs = []
+
+function drawChristmasOrbs(radius, height, segments, initialPosition) {
+    const vertices = [];
+
+    var colourIndex = Math.random()*3+1
+
+    // Calculate angle between segments
+    const angleIncrement = (2 * Math.PI) / segments;
+
+    // Calculate vertices on the base circle
+    for (let i = 0; i < segments; i++) {
+        const angle = i * angleIncrement;
+        const x = initialPosition.x + radius * Math.cos(angle);
+        const z = initialPosition.z + radius * Math.sin(angle);
+        const orbGeometry = new THREE.SphereGeometry(0.2)
+        const orbRedMateriel = new THREE.MeshStandardMaterial({color: 'red'})
+        const orbBlueMateriel = new THREE.MeshStandardMaterial({color: 'blue'})
+        const orbYellowMateriel = new THREE.MeshStandardMaterial({color: 'yellow'})
+        const orbPurpleMateriel = new THREE.MeshStandardMaterial({color: 'purple'})
+        var orbMaterial;
+        if(colourIndex%4 < 1){
+            orbMaterial = orbRedMateriel
+        }
+        else if(colourIndex%4 <2){
+            orbMaterial = orbBlueMateriel
+        }
+        else if(colourIndex%4 <3){
+            orbMaterial = orbPurpleMateriel
+        }
+        else{
+            orbMaterial = orbYellowMateriel
+        }
+
+        colourIndex = colourIndex + 1
+        console.log(colourIndex);
+        const orb =  new THREE.Mesh(orbGeometry, orbMaterial);
+
+        orb.position.set(x, initialPosition.y, z)
+        scene.add(orb);
+
+        orbs.push(orb);
+
+
+    }
+
+    // Add apex vertex
+    vertices.push(new THREE.Vector3(initialPosition.x, initialPosition.y + height, initialPosition.z));
+
+    return vertices;
+}
+
+
+drawChristmasOrbs(2.5,4,8, new THREE.Vector3(treeBase.position.x, treeBase.position.y+0.5, treeBase.position.z))
+drawChristmasOrbs(2,3,8, new THREE.Vector3(treeCone1.position.x, treeCone1.position.y-0.25, treeCone1.position.z))
+
+
 scene.add(treeCone1);
 scene.add(treeCone2);
-scene.add(treeCone3);
 
 
 // Ambient lights
@@ -128,11 +192,16 @@ shakeAnimationFolder.add(shakingVariables, 'speed', 0, 3, 0.1).name("Speed");
 shakeAnimationFolder.add(shakingVariables, 'animationFrames', 0, 500, 1).name("Animation Frame");
 shakeAnimationFolder.open();
 
+var snowAnimationFolder = gui.addFolder('Snowing Setting');
+snowAnimationFolder.add(snowingVariable, 'gravitySpeed', 0, 3, 1).name("Gravity Speed");
+snowAnimationFolder.add(snowingVariable, 'particleCount', 500, 2000, 1000).name("Number of Snow Particles");
+snowAnimationFolder.open();
+
 gui.add({ 'Shake Animation': shakeAnimation }, 'Shake Animation').name("Shake Animation");
 
 // Initialize velocity, position and states of each particle
 function particleSystemInit(){
-    for (let i = 0; i < particleCount; i++) {
+    for (let i = 0; i < snowingVariable.particleCount; i++) {
         let coord = generateRandomPointInsideSphere1();
 
         const y = coord[1]
@@ -179,8 +248,6 @@ const particleMaterial = new THREE.PointsMaterial({
 const particleSystem = new THREE.Points(particles, particleMaterial);
 
 
-
-
 // Function to start the shaking animation
 function shakeAnimation() {
     t = 0;
@@ -197,7 +264,6 @@ function shakeAnimation() {
 function animate() {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
-
     if (!snowfallStarted && shakeState) {
         // Perform shaking animation
         if (t < shakingVariables.animationFrames) {
@@ -208,7 +274,10 @@ function animate() {
                 treeBase.position.y -= 0.25 * shakingVariables.speed;
                 treeCone1.position.y -= 0.25 * shakingVariables.speed;
                 treeCone2.position.y -= 0.25 * shakingVariables.speed;
-                treeCone3.position.y -= 0.25 * shakingVariables.speed;
+                for(var i = 0; i<orbs.length; i++){
+                    orbs[i].position.y-=0.25* shakingVariables.speed;
+                }
+
 
             } else if (shakingDirection == "U") {
                 top.position.y += 0.25 * shakingVariables.speed;
@@ -217,7 +286,10 @@ function animate() {
                 treeBase.position.y += 0.25 * shakingVariables.speed;
                 treeCone1.position.y += 0.25 * shakingVariables.speed;
                 treeCone2.position.y += 0.25 * shakingVariables.speed;
-                treeCone3.position.y += 0.25 * shakingVariables.speed;
+                for(var i = 0; i<orbs.length; i++){
+                    orbs[i].position.y+=0.25* shakingVariables.speed;
+                }
+            
             }
 
             if (top.position.y < -1 && shakingDirection == "D") {
@@ -236,13 +308,12 @@ function animate() {
         }
     } else if (snowfallStarted) {
         // Snowfall animation
-        if (deathCounter<particleCount) { // Convert duration to frames
+        if (deathCounter<snowingVariable.particleCount) { // Convert duration to frames
             snowFalling();
-            console.log(deathCounter);
 
-            if(deathCounter > particleCount/2){
+            if(deathCounter > snowingVariable.particleCount/2){
                 const states = particles.getAttribute('state');
-                for(var i = 0; i< particleCount; i++){
+                for(var i = 0; i< snowingVariable.particleCount; i++){
                     if(states.array[i] == 0 && Math.random()*50<1){
                         states.array[i] = 1
                     }
@@ -268,7 +339,7 @@ function animate() {
 
 function generateRandomPointInsideSphere1() {
     while(true){
-        const y = Math.random()*(radius-4) + 4 
+        const y = Math.random()*(radius-2) + 2 
         const x = Math.random()*Math.sqrt(radius*radius-y*y)*2 -Math.sqrt(radius*radius - y*y) 
         const z = Math.random()*Math.sqrt(radius*radius-y*y)*2 -Math.sqrt(radius*radius - y*y)
         if(Math.sqrt((x- top.position.x)**2 + (y - top.position.y)**2 + (z-top.position.z)**2)<radius){
@@ -287,10 +358,9 @@ function snowFalling(){
     const states = particles.getAttribute('state');
     // Update particle positions
 
-    for (let i = 0; i < particleCount; i++) {
+    for (let i = 0; i < snowingVariable.particleCount; i++) {
         if(Math.random()*300 <=1){
             states.array[i] = 1;
-            console.log("here")
         }
 
         if(deaths.array[i] <= 5 && states.array[i] == 1){
@@ -298,11 +368,9 @@ function snowFalling(){
             positions.array[i * 3] += velocities.array[i * 3];
             positions.array[i * 3 + 1] += velocities.array[i * 3 + 1];
             positions.array[i * 3 + 2] += velocities.array[i * 3 + 2];
-
             // Apply gravity
-            velocities.array[i * 3] += gravity.x;
-            velocities.array[i * 3 + 1] += gravity.y;
-            velocities.array[i * 3 + 2] += gravity.z;
+
+            velocities.array[i * 3 + 1] += gravity.y*snowingVariable.gravitySpeed;
 
 
             // Reset particle position if it goes below the ground
@@ -325,22 +393,20 @@ function snowFalling(){
 
             }
             else if(Math.sqrt((positions.array[i*3] - top.position.x)**2 + (positions.array[i*3+1]- top.position.y)**2 + (positions.array[i*3+2] -  top.position.z)**2)>radius && deaths.array[i] != 21){
+                let coord = generateRandomPointInsideSphere1();
+                const y = coord[1]
+                const x = coord[0]
+                const z = coord[2]
 
-                if(positions.array[i*3]>0){
-                    velocities.array[i * 3] = -Math.random() * 0.01
-                }
-                else if(positions.array[i*3]<0){
-                    velocities.array[i * 3] = Math.random() * 0.01
-                }
+                deaths.array[i] = deaths.array[i] +1;
+                positions.array[i * 3 + 1] = y
+                positions.array[i * 3] = x
+                positions.array[i * 3 + 2] = z
 
-                if(positions.array[i*3+2]>0){
-                    velocities.array[i * 3+2] = -Math.random() * 0.01
-                }
-                else if(positions.array[i*3+2]<0){
-                    velocities.array[i * 3+2] = Math.random() * 0.01
-                }
+                velocities.array[i * 3] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+                velocities.array[i * 3 + 1] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+                velocities.array[i * 3 + 2] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
 
-                
             }
             if(deaths.array[i] == 6){
                 deathCounter++;
