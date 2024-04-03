@@ -15,7 +15,7 @@ var count = 0;
 var flag2 = true;
 
 // Create snow particles
-const particleCount = 500;
+const particleCount = 1000;
 const particles = new THREE.BufferGeometry();
 const positions = new Float32Array(particleCount * 3); // 3 values per vertex (x, y, z)
 const velocities = new Float32Array(particleCount * 3); // 3 values per velocity (vx, vy, vz)
@@ -240,11 +240,13 @@ function animate() {
             snowFalling();
             console.log(deathCounter);
 
-            if(deathCounter > 490){
+            if(deathCounter > particleCount/2){
                 const states = particles.getAttribute('state');
                 for(var i = 0; i< particleCount; i++){
-                    
+                    if(states.array[i] == 0 && Math.random()*50<1){
                         states.array[i] = 1
+                    }
+                        
                 }
                 particles.setAttribute('state', states);
                 particleSystem.geometry.attributes.state.needsUpdate = true; 
@@ -286,7 +288,7 @@ function snowFalling(){
     // Update particle positions
 
     for (let i = 0; i < particleCount; i++) {
-        if(Math.random()*500 <=1){
+        if(Math.random()*300 <=1){
             states.array[i] = 1;
             console.log("here")
         }
