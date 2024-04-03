@@ -182,10 +182,18 @@ scene.add(directionalLight);
 //Dat Slider
 const gui = new GUI();
 var cameraFolder = gui.addFolder('Camera Setting');
-cameraFolder.add(camera.position, 'x', -200, 200, 1).name("X").onChange(camera.lookAt(top.position.x, top.position.y, top.position.z));
-cameraFolder.add(camera.position, 'y', -200, 200, 1).name("Y").onChange(camera.lookAt(top.position.x, top.position.y, top.position.z));
-cameraFolder.add(camera.position, 'z', -200, 200, 1).name("Z").onChange(camera.lookAt(top.position.x, top.position.y, top.position.z));
+//cameraFolder.add(camera.position, 'x', -200, 200, 1).name("X").onChange(camera.lookAt(top.position.x, top.position.y, top.position.z));
+//cameraFolder.add(camera.position, 'y', -200, 200, 1).name("Y").onChange(camera.lookAt(top.position.x, top.position.y, top.position.z));
+//cameraFolder.add(camera.position, 'z', -200, 200, 1).name("Z").onChange(camera.lookAt(top.position.x, top.position.y, top.position.z));
+cameraFolder.add(camera.position, 'x', -200, 200, 1).name("X").onChange(updateCamera);
+cameraFolder.add(camera.position, 'y', -200, 200, 1).name("Y").onChange(updateCamera);
+cameraFolder.add(camera.position, 'z', -200, 200, 1).name("Z").onChange(updateCamera);
 cameraFolder.open();
+
+// Define new function updateCamera() upon camera change
+function updateCamera() {
+    camera.lookAt(scene.position);
+}
 
 var shakeAnimationFolder = gui.addFolder('Shaking Setting');
 shakeAnimationFolder.add(shakingVariables, 'speed', 0, 3, 0.1).name("Speed");
