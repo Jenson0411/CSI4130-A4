@@ -13,7 +13,9 @@ const snowfallDuration = 10;
 var deathCounter = 0
 var count = 0;
 var flag2 = true;
-
+var shakeStateY, shakeStateX, shakeStateZ
+var snowfallStarted1 = false;
+var snowfallStarted2 = false;
 const snowingVariable = {
     particleCount : 1000,
     gravitySpeed: 1 
@@ -205,7 +207,11 @@ snowAnimationFolder.add(snowingVariable, 'gravitySpeed', 0, 3, 1).name("Gravity 
 snowAnimationFolder.add(snowingVariable, 'particleCount', 500, 2000, 1000).name("Number of Snow Particles");
 snowAnimationFolder.open();
 
-gui.add({ 'Shake Animation': shakeAnimation }, 'Shake Animation').name("Shake Animation");
+shakeAnimationFolder.add({ 'Shake Animation': shakeAnimationY }, 'Shake Animation').name("Shake Animation");
+
+shakeAnimationFolder.add({ 'Shake Horizontal X Animation': shakeAnimationX }, 'Shake Horizontal X Animation').name("Shake Horizontal X Animation");
+shakeAnimationFolder.add({ 'Shake Horizontal Z Animation': shakeAnimationZ }, 'Shake Horizontal Z Animation').name("Shake Horizontal Z Animation");
+
 
 // Initialize velocity, position and states of each particle
 function particleSystemInit(){
@@ -257,22 +263,28 @@ const particleSystem = new THREE.Points(particles, particleMaterial);
 
 
 // Function to start the shaking animation
-function shakeAnimation() {
+function shakeAnimationY() {
     t = 0;
-    shakeState = true;
-    particleSystemInit();
-    // Reset snowfall animation variables
-    snowfallStarted = false;
-    snowfallTimer = 0;
+    shakeStateY = true;
 }
 
+function shakeAnimationX() {
+    t = 0;
+    shakeStateX = true;
+}
+
+function shakeAnimationZ() {
+    t = 0;
+    shakeStateZ = true;
+}
 
 
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
-    if (!snowfallStarted && shakeState) {
+    if (shakeStateY) {
+        console.log("y");
         // Perform shaking animation
         if (t < shakingVariables.animationFrames) {
             if (shakingDirection == "D") {
@@ -309,7 +321,7 @@ function animate() {
         } else {
             // Start snowfall animation after shaking animation ends
             snowfallStarted = true;
-            shakeState = false; // Reset shake state
+            shakeStateY = false; // Reset shake state
             scene.add(particleSystem); // Add snow particles to the scene
             particleSystemInit();
             // changeState(0)
@@ -317,7 +329,7 @@ function animate() {
     } else if (snowfallStarted) {
         // Snowfall animation
         if (deathCounter<snowingVariable.particleCount) { // Convert duration to frames
-            snowFalling();
+            snowFalling("Y");
 
             if(deathCounter > snowingVariable.particleCount/2){
                 const states = particles.getAttribute('state');
@@ -343,6 +355,148 @@ function animate() {
             count = 0;
         }
     }
+    if (shakeStateX) {
+        console.log("s");
+        // Perform shaking animation
+        if (t < shakingVariables.animationFrames) {
+            if (shakingDirection == "D") {
+                top.position.x -= 0.25 * shakingVariables.speed;
+                base.position.x -= 0.25 * shakingVariables.speed;
+                snowLayer.position.x -= 0.25 * shakingVariables.speed;
+                treeBase.position.x -= 0.25 * shakingVariables.speed;
+                treeCone1.position.x -= 0.25 * shakingVariables.speed;
+                treeCone2.position.x -= 0.25 * shakingVariables.speed;
+                for(var i = 0; i<orbs.length; i++){
+                    orbs[i].position.x-=0.25* shakingVariables.speed;
+                }
+
+
+            } else if (shakingDirection == "U") {
+                top.position.x += 0.25 * shakingVariables.speed;
+                base.position.x += 0.25 * shakingVariables.speed;
+                snowLayer.position.x += 0.25 * shakingVariables.speed;
+                treeBase.position.x += 0.25 * shakingVariables.speed;
+                treeCone1.position.x += 0.25 * shakingVariables.speed;
+                treeCone2.position.x += 0.25 * shakingVariables.speed;
+                for(var i = 0; i<orbs.length; i++){
+                    orbs[i].position.x+=0.25* shakingVariables.speed;
+                }
+            
+            }
+
+            if (top.position.x < -1 && shakingDirection == "D") {
+                shakingDirection = "U";
+            } else if (top.position.x > 1 && shakingDirection == "U") {
+                shakingDirection = "D";
+            }
+            t++;
+        } else {
+            // Start snowfall animation after shaking animation ends
+            snowfallStarted1 = true;
+            shakeStateX = false; // Reset shake state
+            scene.add(particleSystem); // Add snow particles to the scene
+            particleSystemInit();
+            // changeState(0)
+        }
+    } else if (snowfallStarted1) {
+        // Snowfall animation
+        if (deathCounter<snowingVariable.particleCount) { // Convert duration to frames
+            snowFalling("X");
+            if(deathCounter > snowingVariable.particleCount/2){
+                const states = particles.getAttribute('state');
+                for(var i = 0; i< snowingVariable.particleCount; i++){
+                    if(states.array[i] == 0 && Math.random()*50<1){
+                        states.array[i] = 1
+                    }
+                        
+                }
+                particles.setAttribute('state', states);
+                particleSystem.geometry.attributes.state.needsUpdate = true; 
+                flag = false;
+
+            }
+
+        }    
+         else {
+            deathCounter = 0;
+            // Snowfall animation ended, reset variables for the next cycle
+            snowfallStarted1 = false;
+            scene.remove(particleSystem);
+            particleSystemInit();
+            count = 0;
+        }
+    }    
+    if (shakeStateZ) {
+        console.log("s");
+        // Perform shaking animation
+        if (t < shakingVariables.animationFrames) {
+            if (shakingDirection == "D") {
+                top.position.z -= 0.25 * shakingVariables.speed;
+                base.position.z -= 0.25 * shakingVariables.speed;
+                snowLayer.position.z -= 0.25 * shakingVariables.speed;
+                treeBase.position.z -= 0.25 * shakingVariables.speed;
+                treeCone1.position.z -= 0.25 * shakingVariables.speed;
+                treeCone2.position.z -= 0.25 * shakingVariables.speed;
+                for(var i = 0; i<orbs.length; i++){
+                    orbs[i].position.z-=0.25* shakingVariables.speed;
+                }
+
+
+            } else if (shakingDirection == "U") {
+                top.position.z += 0.25 * shakingVariables.speed;
+                base.position.z += 0.25 * shakingVariables.speed;
+                snowLayer.position.z += 0.25 * shakingVariables.speed;
+                treeBase.position.z += 0.25 * shakingVariables.speed;
+                treeCone1.position.z += 0.25 * shakingVariables.speed;
+                treeCone2.position.z += 0.25 * shakingVariables.speed;
+                for(var i = 0; i<orbs.length; i++){
+                    orbs[i].position.z+=0.25* shakingVariables.speed;
+                }
+            
+            }
+
+            if (top.position.z < -1 && shakingDirection == "D") {
+                shakingDirection = "U";
+            } else if (top.position.z > 1 && shakingDirection == "U") {
+                shakingDirection = "D";
+            }
+            t++;
+        } else {
+            // Start snowfall animation after shaking animation ends
+            snowfallStarted2 = true;
+            shakeStateZ = false; // Reset shake state
+            scene.add(particleSystem); // Add snow particles to the scene
+            particleSystemInit();
+            // changeState(0)
+        }
+    } else if (snowfallStarted2) {
+        // Snowfall animation
+        if (deathCounter<snowingVariable.particleCount) { // Convert duration to frames
+            snowFalling("Z");
+            if(deathCounter > snowingVariable.particleCount/2){
+                const states = particles.getAttribute('state');
+                for(var i = 0; i< snowingVariable.particleCount; i++){
+                    if(states.array[i] == 0 && Math.random()*50<1){
+                        states.array[i] = 1
+                    }
+                        
+                }
+                particles.setAttribute('state', states);
+                particleSystem.geometry.attributes.state.needsUpdate = true; 
+                flag = false;
+
+            }
+
+        }    
+         else {
+            deathCounter = 0;
+            // Snowfall animation ended, reset variables for the next cycle
+            snowfallStarted2 = false;
+            scene.remove(particleSystem);
+            particleSystemInit();
+            count = 0;
+        }
+    }    
 }
 
 function generateRandomPointInsideSphere1() {
@@ -359,26 +513,30 @@ function generateRandomPointInsideSphere1() {
 
 
 
-function snowFalling(){
+function snowFalling(type){
     const positions = particles.getAttribute('position');
     const velocities = particles.getAttribute('velocity');
     const deaths = particles.getAttribute('death');
     const states = particles.getAttribute('state');
     // Update particle positions
-
+    console.log(type)
     for (let i = 0; i < snowingVariable.particleCount; i++) {
         if(Math.random()*300 <=1){
             states.array[i] = 1;
         }
 
-        if(deaths.array[i] <= 5 && states.array[i] == 1){
+        if(deaths.array[i] <= 3 && states.array[i] == 1){
             // Update position based on velocity
             positions.array[i * 3] += velocities.array[i * 3];
             positions.array[i * 3 + 1] += velocities.array[i * 3 + 1];
             positions.array[i * 3 + 2] += velocities.array[i * 3 + 2];
             // Apply gravity
 
-            velocities.array[i * 3 + 1] += gravity.y*snowingVariable.gravitySpeed;
+            if(type == "Y"){
+                console.log("hello")
+                velocities.array[i * 3 + 1] += gravity.y*snowingVariable.gravitySpeed;
+            }
+    
 
 
             // Reset particle position if it goes below the ground
@@ -394,9 +552,21 @@ function snowFalling(){
                 positions.array[i * 3] = x
                 positions.array[i * 3 + 2] = z
 
-                velocities.array[i * 3] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
-                velocities.array[i * 3 + 1] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
-                velocities.array[i * 3 + 2] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+                if(type == "X"){
+                    velocities.array[i * 3] = 0.1 // Random velocity in x direction
+                    velocities.array[i * 3 + 1] = 0 // Random velocity in x direction
+                    velocities.array[i * 3 + 2] = 0// Random velocity in x direction
+                }
+                else if(type == "Y"){
+                    velocities.array[i * 3] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+                    velocities.array[i * 3 + 1] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+                    velocities.array[i * 3 + 2] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+                }
+                else{
+                    velocities.array[i * 3] = 0 // Random velocity in x direction
+                    velocities.array[i * 3 + 1] = 0 // Random velocity in x direction
+                    velocities.array[i * 3 + 2] = 0.1// Random velocity in x direction
+                }
 
 
             }
@@ -407,16 +577,30 @@ function snowFalling(){
                 const z = coord[2]
 
                 deaths.array[i] = deaths.array[i] +1;
-                positions.array[i * 3 + 1] = y
-                positions.array[i * 3] = x
-                positions.array[i * 3 + 2] = z
 
-                velocities.array[i * 3] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
-                velocities.array[i * 3 + 1] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
-                velocities.array[i * 3 + 2] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+                if(type == "X"){
+                    velocities.array[i * 3] = -velocities.array[i * 3 ] // Random velocity in x direction
+                    velocities.array[i * 3 + 1] = 0  // Random velocity in x direction
+                    velocities.array[i * 3 + 2] = 0// Random velocity in x direction
+                }
+                else if(type == "Y"){
+                    positions.array[i * 3 + 1] = y
+                    positions.array[i * 3] = x
+                    positions.array[i * 3 + 2] = z
+    
+                    velocities.array[i * 3] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+                    velocities.array[i * 3 + 1] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+                    velocities.array[i * 3 + 2] = Math.random() * 0.02 - 0.01 // Random velocity in x direction
+                }
+                else{
+                
+                    velocities.array[i * 3] = 0 // Random velocity in x direction
+                    velocities.array[i * 3 + 1] = 0  // Random velocity in x direction
+                    velocities.array[i * 3 + 2] = -velocities.array[i * 3 + 2]// Random velocity in x direction
+                }
 
             }
-            if(deaths.array[i] == 6){
+            if(deaths.array[i] == 4){
                 deathCounter++;
                 positions.array[i * 3 ] = 0;
                 positions.array[i * 3 + 1] = -(radius-capHeight + 0.5); 
